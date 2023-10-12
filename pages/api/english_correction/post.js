@@ -12,8 +12,9 @@ export default async function handler(req, res) {
 
   const endpoint = process.env.ENGLISH_CORRECTION_API;
 
+  /*
   var auth;
-  if (process.env.FIREBASE_PROVATE_KEY) {
+  if (process.env.FIREBASE_PRIVATE_KEY) {
     const credential = admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
@@ -25,7 +26,9 @@ export default async function handler(req, res) {
   } else {
     auth = new GoogleAuth(); // Use server default credential
   }
+  */
 
+  const auth = new GoogleAuth();
   const client = await auth.getIdTokenClient(endpoint);
   const response = await client.request({
     url: endpoint,
@@ -39,13 +42,6 @@ export default async function handler(req, res) {
   });
 
   const data = response.data;
-
-/*
-  const data = {
-    corrected: "Corrected text.",
-    samples: "- Sample1\n- Sample2\n- Sample3\n",
-  };
-*/
 
   res.status(200).json(data);
 }
