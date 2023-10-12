@@ -1,0 +1,72 @@
+html,
+body {
+  padding: 10px;
+  margin: 0;
+  font-family: sans-serif;
+}
+
+button {
+  background-color: #0075c2;
+  border: none;
+  color: white;
+  font-size: 1.0rem;
+  padding: 0.6rem;
+  margin: 0.6rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+button:disabled {
+  background-color: #cccccc;
+}
+
+.textlink a {
+	position: relative;
+	color: #333;
+	text-decoration: none;
+	padding-right: 30px;
+}
+
+.textlink a {
+	padding-right: 50px;
+}
+
+.textlink a::before {
+	content: '';
+	position: absolute;
+	top: calc(50% - 4px);
+	right: 0;
+	transform: rotate(30deg);
+	width: 12px;
+	height: 1px;
+	background-color: #333;
+}
+
+.textlink a::after {
+	content: '';
+	position: absolute;
+	top: 50%;
+	right: 0;
+	transform: translateY(-50%);
+	width: 40px;
+	height: 1px;
+	background-color: #333;
+}
+
+.textlink a:hover::before {
+	background-color: #ceb849;
+}
+
+.textlink a:hover::after {
+	background-color: #ceb849;
+}
+
+.EC-Service textarea {
+  resize: none;
+  width: 600px;
+  height: 200px;
+}
+
+.text {
+  white-space: pre-wrap;
+}
