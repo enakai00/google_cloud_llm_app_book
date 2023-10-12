@@ -2,7 +2,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from 'next/router'
 import { useState, useEffect } from "react";
-import { auth } from "../../config/firebase";
+import { auth } from "lib/firebase";
 
 
 export default function Home() {
@@ -24,7 +24,7 @@ export default function Home() {
   const initialText = "I go to school yesterday. I eat apple for lunch. I like to eat apple.";
   const [text, setText] = useState(initialText);
   const [corrected, setCorrected] = useState(" ");
-  const [samples, setSamples] = useState("-\n-\n-\n");
+  const [samples, setSamples] = useState("-\n-\n-");
   const [buttonDisabled, setButtonDisabled] = useState(false);
 
   if (! loginUser) {
@@ -56,7 +56,7 @@ export default function Home() {
 
     setButtonDisabled(true);
     setCorrected(" ");
-    setSamples("-\n-\n-\n");
+    setSamples("-\n-\n-");
 
     const data = await callBackend();
 
@@ -66,15 +66,19 @@ export default function Home() {
   }
 
   const element = (
-        <div className="EC-Service">
-          <textarea value={text} onChange={(event) => setText(event.target.value)} />
-          <br/>
-          <button disabled={buttonDisabled} onClick={getAnswer}>Correct me!</button>
-          <h2>Grammar correction</h2>
-          <div className="text">{corrected}</div>
-          <h2>Model sentences</h2>
-          <div className="text">{samples}</div>
-        </div>
+    <div className="EC-Service">
+      <textarea
+        value={text}
+        onChange={(event) => setText(event.target.value)} />
+      <br/>
+      <button
+        disabled={buttonDisabled}
+        onClick={getAnswer}>Correct me!</button>
+      <h2>Grammar correction</h2>
+      <div className="text">{corrected}</div>
+      <h2>Model sentences</h2>
+      <div className="text">{samples}</div>
+    </div>
   );
 
   return (

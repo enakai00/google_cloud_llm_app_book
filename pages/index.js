@@ -2,7 +2,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { signOut } from "firebase/auth";
-import { auth, signInWithGoogle } from "../config/firebase";
+import { auth, signInWithGoogle } from "lib/firebase";
 
 
 export default function ApplicationMenu() {
