@@ -1,5 +1,5 @@
 # Environment file
-.env
+.env*.local
 .firebase.js
 
 # Logs

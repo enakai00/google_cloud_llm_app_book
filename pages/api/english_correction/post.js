@@ -11,14 +11,20 @@ export default async function handler(req, res) {
   }
 
   const endpoint = process.env.ENGLISH_CORRECTION_API;
-  const credential = admin.credential.cert({
+
+  var auth;
+  if (process.env.FIREBASE_PROVATE_KEY) {
+    const credential = admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-  });
-  const auth = new GoogleAuth({
-    credential: credential,
-  });
+    });
+    auth = new GoogleAuth({
+      credential: credential,
+    });
+  } else {
+    auth = new GoogleAuth(); // Use server default credential
+  }
 
   const client = await auth.getIdTokenClient(endpoint);
   const response = await client.request({

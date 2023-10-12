@@ -2,7 +2,6 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from 'next/router'
 import { useState, useEffect } from "react";
-//import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../config/firebase";
 
 
