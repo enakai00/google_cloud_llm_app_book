@@ -60,13 +60,3 @@ button:disabled {
 .textlink a:hover::after {
 	background-color: #ceb849;
 }
-
-.EC-Service textarea {
-  resize: none;
-  width: 600px;
-  height: 200px;
-}
-
-.text {
-  white-space: pre-wrap;
-}
