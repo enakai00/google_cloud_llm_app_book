@@ -1,5 +1,4 @@
 import { verifyIdToken } from "lib/middleware";
-import admin from 'firebase-admin';
 import { GoogleAuth } from "google-auth-library";
 
 export default async function handler(req, res) {

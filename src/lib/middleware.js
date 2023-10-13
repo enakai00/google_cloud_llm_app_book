@@ -1,15 +1,5 @@
 import admin from "firebase-admin";
 
-/*
-var app;
-try {
-  app = admin.initializeApp();
-} catch (err) {
-  if (!/already exists/.test(err.message)) {
-    console.error('Firebase initialization error', err.stack)
-  }
-}
-*/
 const app = admin.initializeApp();
 
 export async function verifyIdToken(req) {
