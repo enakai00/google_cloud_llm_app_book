@@ -3,13 +3,12 @@ import { auth } from "lib/firebase";
 import dynamic from 'next/dynamic'
 
 
-function FashionCompliment() {
-
+export default function FashionCompliment() {
   // This is to avoid SSR error
   // as this code can be executed only on browsers.
-  if (! typeof window === 'object') {
-    return;
-  }
+//  if (! typeof window === 'object') {
+//    return;
+//  }
 
   // Auxiliary classes and functions
   class FileReaderEx extends FileReader {
@@ -186,6 +185,8 @@ function FashionCompliment() {
   return element;
 }
 
+/*
 export default dynamic(
   () => Promise.resolve(FashionCompliment), {ssr: false}
 );
+*/

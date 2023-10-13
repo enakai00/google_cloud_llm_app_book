@@ -1,11 +1,11 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { signOut } from "firebase/auth";
 import { auth, signInWithGoogle } from "lib/firebase";
+import ApplicationMenu from "components/application_menu";
 
 
-export default function ApplicationMenu() {
+export default function ApplicationMenuPage() {
   const [loginUser, setLoginUser] = useState(null);
 
   // Register login state change handler
@@ -16,25 +16,11 @@ export default function ApplicationMenu() {
     return unsubscribe;
   }, []);
 
-
   let element;
 
   if (loginUser) {
-    const displayName = auth.currentUser.displayName;
-    const email = auth.currentUser.email;
-
     element = (
-      <div style={{ fontSize: "1.2rem" }}>
-        Login user : {displayName}<br/>({email})<br/>
-        <button onClick={() => signOut(auth)}>Logout</button>
-        <div className="textlink">
-          <ul>
-            <li><Link href="./english_correction">English Correction AI Service</Link></li>
-            <li><Link href="./fashion_compliment">Fashion Compliment AI Service</Link></li>
-            <li><Link href="./knowledge_drive">Knowledge Drive Application</Link></li>
-          </ul>
-        </div>
-      </div>
+      <ApplicationMenu />
     );
   } else {
     element = (

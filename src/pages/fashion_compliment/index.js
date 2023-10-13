@@ -6,7 +6,7 @@ import { auth } from "lib/firebase";
 import FashionCompliment from "components/fashion_compliment";
 
 
-export default function Home() {
+export default function FashionComplimentPage() {
   const [loginUser, setLoginUser] = useState(null);
   const router = useRouter()
 

@@ -6,7 +6,7 @@ import { auth } from "lib/firebase";
 import EnglishCorrection from "components/english_correction";
 
 
-export default function Home() {
+export default function EnglishCorrectionPage() {
   const [loginUser, setLoginUser] = useState(null);
   const router = useRouter()
 
