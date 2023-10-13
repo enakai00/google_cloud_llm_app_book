@@ -1,9 +1,9 @@
 import Head from "next/head";
 import Link from "next/link";
-import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import { useState, useEffect } from "react";
 import { auth } from "lib/firebase";
-import EnglishCorrection from "components/english_correction";
+import FashionCompliment from "components/fashion_compliment";
 
 
 export default function Home() {
@@ -28,10 +28,10 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>English Correction AI</title>
+        <title>Fashion Compliment AI</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <EnglishCorrection />
+        <FashionCompliment/>
       <div className="textlink">
       <br/><Link href="/">Back to main menu</Link>
       </div>

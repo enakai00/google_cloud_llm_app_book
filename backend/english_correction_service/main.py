@@ -12,7 +12,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return 'Google Cloud LLM grammar correction service.'
+    return 'Google Cloud LLM English correction service.'
 
 
 def get_response(prompt):
@@ -22,7 +22,7 @@ def get_response(prompt):
     return answer
 
 
-@app.route('/grammar-service/api/v1/correction', methods=['POST'])
+@app.route('/api/post', methods=['POST'])
 def grammar_correction():
     json_data = request.get_json()
     text = json_data['text']
@@ -48,6 +48,7 @@ Here's the text I want your answer to.
 text: {}
 answer:    
 """.format(text)
+
     samples = get_response(prompt)
 
     resp = {
@@ -59,4 +60,5 @@ answer:
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+    port = int(os.environ.get('PORT', 8080))
+    app.run(debug=False, host='0.0.0.0', port=port)

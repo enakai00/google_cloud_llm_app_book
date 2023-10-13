@@ -11,11 +11,11 @@ export default function ApplicationMenu() {
   // Register login state change handler
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
-      console.log("login user:", user);
       setLoginUser(user);
     });
     return unsubscribe;
   }, []);
+
 
   let element;
 

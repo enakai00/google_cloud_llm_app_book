@@ -1,4 +1,5 @@
 
+## Create artifact repo
 
 ```
 gcloud artifacts repositories create llm-app-repo\
@@ -6,14 +7,52 @@ gcloud artifacts repositories create llm-app-repo\
   --location asia-northeast1 \
   --description "Docker repository for llm-application"
 
-gcloud iam service-accounts create llm-application
+REPO=asia-northeast1-docker.pkg.dev/$GOOGLE_CLOUD_PROJECT/llm-app-repo
+```
+
+## Deploy backend
+
+```
+gcloud iam service-accounts create llm-app-backend
+SERVICE_ACCOUNT=llm-app-backend@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com
 
 gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
-  --member serviceAccount:llm-application@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com \
+  --member serviceAccount:$SERVICE_ACCOUNT \
+  --role roles/aiplatform.user
+
+SERVICE_NAME=fashion-compliment-service
+
+gcloud builds submit ./backend/fashion_compliment_service \
+  --tag $REPO/$SERVICE_NAME
+
+gcloud run deploy fashion-compliment-service \
+  --image $REPO/$SERVICE_NAME \
+  --service-account $SERVICE_ACCOUNT \
+  --region asia-northeast1 --no-allow-unauthenticated
+
+cp ./backend/fashion_compliment/image.jpg ./
+
+SERVICE_URL=$(gcloud run services list --platform managed \
+  --format="table[no-heading](URL)" --filter="metadata.name:${SERVICE_NAME}")
+echo {\"image\":\"$(base64 -w0 image.jpg)\", \"lang\":\"ja\"} | \
+curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+-H "Content-Type: application/json" -d @- \
+-s ${SERVICE_URL}/api/post | jq .
+```
+
+
+## Deploy main application
+
+```
+gcloud iam service-accounts create llm-application
+SERVICE_ACCOUNT=llm-application@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com
+
+gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
+  --member serviceAccount:$SERVICE_ACCOUNt \
   --role 'roles/firebase.sdkAdminServiceAgent'
 
 gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
-  --member serviceAccount:llm-application@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com \
+  --member serviceAccount:$SERVICE_ACCOUNt \
   --role 'roles/run.invoker'
 
 #gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
@@ -24,12 +63,11 @@ gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
 #  --role 'roles/iam.serviceAccountTokenCreator'
 
 
-
 gcloud builds submit ./src \
-  --tag asia-northeast1-docker.pkg.dev/$GOOGLE_CLOUD_PROJECT/llm-app-repo/llm-app
+  --tag $REPO/llm-application
 
 gcloud run deploy llm-app \
-  --image asia-northeast1-docker.pkg.dev/$GOOGLE_CLOUD_PROJECT/llm-app-repo/llm-app \
-  --service-account llm-application@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com \
+  --image $REPO/llm-application \
+  --service-account $SERVICE_ACCOUNT \
   --region asia-northeast1 --allow-unauthenticated
 ```
