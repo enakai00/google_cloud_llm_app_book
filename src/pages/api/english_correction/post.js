@@ -13,8 +13,7 @@ export default async function handler(req, res) {
   const endpoint = process.env.ENGLISH_CORRECTION_API;
   const auth = new GoogleAuth();
   const client = await auth.getIdTokenClient(endpoint);
-
-  const response = await client.request({
+  const request = {
     url: endpoint,
     method: "POST",
     headers: {
@@ -23,8 +22,9 @@ export default async function handler(req, res) {
     data: {
       text: req.body.text,
     },
-  });
+  };
 
+  const response = await client.request(request);
   const data = response.data;
 
   res.status(200).json(data);

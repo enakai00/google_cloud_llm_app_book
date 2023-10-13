@@ -49,8 +49,8 @@ export default function Home() {
         })
       };
 
-      const res = await fetch(apiEndpoint, request);
-      const data = await res.json();
+      const response = await fetch(apiEndpoint, request);
+      const data = await response.json();
       return data;
     };
 
