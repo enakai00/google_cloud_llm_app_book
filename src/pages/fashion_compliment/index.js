@@ -31,7 +31,9 @@ export default function Home() {
         <title>Fashion Compliment AI</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-        <FashionCompliment/>
+      <div style = {{ margin: "10px", width: "600px" }}>
+        <FashionCompliment />
+      </div>
       <div className="textlink">
       <br/><Link href="/">Back to main menu</Link>
       </div>
