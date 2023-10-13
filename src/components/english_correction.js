@@ -10,7 +10,6 @@ export default function EnglishCorrection() {
   const [samples, setSamples] = useState("-\n-\n-");
   const [buttonDisabled, setButtonDisabled] = useState(false);
 
-  // Application main
   const getAnswer = async () => {
     const callBackend = async () => {
       const inputText = text.replace(/\r?\n/g, '');

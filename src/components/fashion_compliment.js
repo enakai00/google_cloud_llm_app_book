@@ -4,11 +4,6 @@ import dynamic from 'next/dynamic'
 
 
 export default function FashionCompliment() {
-  // This is to avoid SSR error
-  // as this code can be executed only on browsers.
-//  if (! typeof window === 'object') {
-//    return;
-//  }
 
   // Auxiliary classes and functions
   class FileReaderEx extends FileReader {
@@ -184,9 +179,3 @@ export default function FashionCompliment() {
 
   return element;
 }
-
-/*
-export default dynamic(
-  () => Promise.resolve(FashionCompliment), {ssr: false}
-);
-*/
