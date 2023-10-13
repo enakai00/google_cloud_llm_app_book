@@ -1,4 +1,3 @@
-
 ## Create artifact repo
 
 ```
@@ -70,4 +69,28 @@ gcloud run deploy llm-app \
   --image $REPO/llm-application \
   --service-account $SERVICE_ACCOUNT \
   --region asia-northeast1 --allow-unauthenticated
+```
+
+
+## Config files
+
+`.env.local`
+
+```
+# Backend service endpoints
+ENGLISH_CORRECTION_API="https://english-correction-service-xxxxx-uc.a.run.app/api/post"
+FASHION_COMPLIMENT_API="https://fashion-compliment-service-xxxxx-an.a.run.app/api/post"
+```
+
+`.firebase.js`
+
+```
+export const firebaseConfig = {
+  apiKey: "xxxxx",
+  authDomain: "xxxxxx",
+  projectId: "xxxxx",
+  storageBucket: "xxxx",
+  messagingSenderId: "xxxx",
+  appId: "xxxxx"
+};
 ```
