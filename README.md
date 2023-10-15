@@ -1,8 +1,22 @@
+## Setup when using VM instead of Cloud Shell
+
+```
+https://github.com/nodesource/distributions
+
+sudo apt-get install git jq -y
+
+git config --global user.email "xxxx"
+git config --global user.name "xxxx"
+
+gcloud auth login
+gcloud config set project
+
+GOOGLE_CLOUD_PROJECT=[Project ID]
+```
+
 ## Create artifact repo
 
 ```
-GOOGLE_CLOUD_PROJECT=[Project ID]
-
 gcloud artifacts repositories create llm-app-repo\
   --repository-format docker \
   --location asia-northeast1 \
