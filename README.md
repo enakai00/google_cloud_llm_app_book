@@ -1,6 +1,8 @@
 ## Create artifact repo
 
 ```
+GOOGLE_CLOUD_PROJECT=[Project ID]
+
 gcloud artifacts repositories create llm-app-repo\
   --repository-format docker \
   --location asia-northeast1 \
@@ -11,6 +13,7 @@ REPO=asia-northeast1-docker.pkg.dev/$GOOGLE_CLOUD_PROJECT/llm-app-repo
 
 ## Deploy backend
 
+### English correction
 ```
 gcloud iam service-accounts create llm-app-backend
 SERVICE_ACCOUNT=llm-app-backend@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com
@@ -19,12 +22,32 @@ gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
   --member serviceAccount:$SERVICE_ACCOUNT \
   --role roles/aiplatform.user
 
+SERVICE_NAME=english-correction-service
+gcloud builds submit ./backend/english_correction_service \
+  --tag $REPO/$SERVICE_NAME
+
+gcloud run deploy $SERVICE_NAME \
+  --image $REPO/$SERVICE_NAME \
+  --service-account $SERVICE_ACCOUNT \
+  --region asia-northeast1 --no-allow-unauthenticated
+
+SERVICE_URL=$(gcloud run services list --platform managed \
+  --format="table[no-heading](URL)" --filter="metadata.name:${SERVICE_NAME}")
+curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"I go to school yesterday. I eat apple for lunch. I like to eat apple."}' \
+  -s ${SERVICE_URL}/api/post | jq .
+```
+
+
+### Fashion compliment
+```
 SERVICE_NAME=fashion-compliment-service
 
 gcloud builds submit ./backend/fashion_compliment_service \
   --tag $REPO/$SERVICE_NAME
 
-gcloud run deploy fashion-compliment-service \
+gcloud run deploy $SERVICE_NAME \
   --image $REPO/$SERVICE_NAME \
   --service-account $SERVICE_ACCOUNT \
   --region asia-northeast1 --no-allow-unauthenticated
