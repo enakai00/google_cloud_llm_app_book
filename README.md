@@ -26,16 +26,35 @@ REPO=asia-northeast1-docker.pkg.dev/$GOOGLE_CLOUD_PROJECT/llm-app-repo
 ```
 
 ## Deploy backend
+### Create sa ervice account
 
-### English correction
 ```
 gcloud iam service-accounts create llm-app-backend
 SERVICE_ACCOUNT=llm-app-backend@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com
 
+# To use vertex AI APIs
 gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
   --member serviceAccount:$SERVICE_ACCOUNT \
   --role roles/aiplatform.user
 
+# To use cloud storage APIs
+gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
+  --member serviceAccount:$SERVICE_ACCOUNT \
+  --role roles/storage.objectUser
+
+# To receive events from eventarc
+gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
+  --member serviceAccount:$SERVICE_ACCOUNT \
+  --role roles/eventarc.eventReceiver
+
+# To trigger the service from eventarc
+gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
+  --member serviceAccount:$SERVICE_ACCOUNT \
+  --role roles/run.invoker
+```
+
+### English correction
+```
 SERVICE_NAME=english-correction-service
 gcloud builds submit ./backend/english_correction_service \
   --tag $REPO/$SERVICE_NAME
@@ -76,6 +95,32 @@ curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
 -s ${SERVICE_URL}/api/post | jq .
 ```
 
+### PDF summarization
+```
+SERVICE_NAME=pdf-summarization-service
+gcloud builds submit ./backend/pdf_summarization_service \
+  --tag $REPO/$SERVICE_NAME
+
+gcloud run deploy $SERVICE_NAME \
+  --image $REPO/$SERVICE_NAME \
+  --service-account $SERVICE_ACCOUNT \
+  --region asia-northeast1 --no-allow-unauthenticated
+
+KMS_SERVICE_ACCOUNT=$(gsutil kms serviceaccount -p $GOOGLE_CLOUD_PROJECT)
+gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
+  --member serviceAccount:$KMS_SERVICE_ACCOUNT \
+  --role roles/pubsub.publisher
+
+sleep 15 && \
+gcloud eventarc triggers create trigger-$SERVICE_NAME \
+  --destination-run-service $SERVICE_NAME \
+  --destination-run-region asia-northeast1 \
+  --location asia-northeast1 \
+  --event-filters "type=google.cloud.storage.object.v1.finalized" \
+  --event-filters "bucket=$GOOGLE_CLOUD_PROJECT.appspot.com" \
+  --service-account $SERVICE_ACCOUNT \
+  --destination-run-path /api/post
+```
 
 ## Deploy main application
 
