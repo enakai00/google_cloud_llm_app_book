@@ -1,10 +1,11 @@
 import json
 import os
 import tempfile
+import google.auth
 from cloudevents.http import from_http
 from flask import Flask, request
 from google.cloud import storage
-from langchain.document_loaders import PyPDFLoader
+from langchain.document_loaders import PyPDFLoader, GCSFileLoader
 from langchain.llms import VertexAI
 from langchain.chains import AnalyzeDocumentChain
 from langchain.chains.question_answering import load_qa_chain
@@ -50,24 +51,23 @@ def process_event():
     if not ext.lower() == '.pdf':
         return ('This is not a pdf file', 200)
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        tmp_file = os.path.join(tmp_dir, filename)
-        download_from_gcs(bucket_name, filepath, tmp_file)
+    # Generate summary of pdf
+    _, project_id = google.auth.default()
+    document = GCSFileLoader(
+        project_name=project_id, bucket=bucket_name, blob=filepath,
+        loader_func=PyPDFLoader).load()
+    pdf_content = document[0].page_content[:5000]
 
-        # Generate summary of the pdf
-        loader = PyPDFLoader(tmp_file)
-        document = loader.load()
-        llm = VertexAI(
-            model_name='text-bison@001',
-            max_output_tokens=256, temperature=0.1, top_p=0.8, top_k=40
-        )
+    llm = VertexAI(
+        model_name='text-bison@001',
+        max_output_tokens=256, temperature=0.1, top_p=0.8, top_k=40
+    )
 
-        qa_chain = load_qa_chain(llm, chain_type='map_reduce')
-        qa_document_chain = AnalyzeDocumentChain(combine_docs_chain=qa_chain)
-        prompt = '何についての文書ですか？日本語で5文以内にまとめてください。'
-        description = qa_document_chain.run(
-            input_document=document[0].page_content[:5000],
-            question=prompt)
+    qa_chain = load_qa_chain(llm, chain_type='map_reduce')
+    qa_document_chain = AnalyzeDocumentChain(combine_docs_chain=qa_chain)
+    prompt = "何についての文書ですか？日本語で5文以内にまとめてください。"
+    description = qa_document_chain.run(
+        input_document=pdf_content, question=prompt)
 
     print('Description of {}: {}'.format(filename, description))
     with tempfile.NamedTemporaryFile() as tmp_file:
