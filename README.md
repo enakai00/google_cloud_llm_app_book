@@ -26,7 +26,7 @@ REPO=asia-northeast1-docker.pkg.dev/$GOOGLE_CLOUD_PROJECT/llm-app-repo
 ```
 
 ## Deploy backend
-### Create sa ervice account
+### Create a service account
 
 ```
 gcloud iam service-accounts create llm-app-backend
