@@ -65,7 +65,7 @@ def process_event():
 
     qa_chain = load_qa_chain(llm, chain_type='map_reduce')
     qa_document_chain = AnalyzeDocumentChain(combine_docs_chain=qa_chain)
-    prompt = "何についての文書ですか？日本語で5文以内にまとめてください。"
+    prompt = '何についての文書ですか？日本語で5文以内にまとめてください。'
     description = qa_document_chain.run(
         input_document=pdf_content, question=prompt)
 
