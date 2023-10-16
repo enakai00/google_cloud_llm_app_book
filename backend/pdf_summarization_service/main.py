@@ -138,11 +138,9 @@ def process_event():
     embedding_vectors = embeddings.embed_documents(page_contents)
     delete_doc(uid, filename)
     for c, embedding_vector in enumerate(embedding_vectors):
-        insert_doc(
-            uid, filename, page_contents[c],
-            pages[c].metadata, str(embedding_vector)
-        )
-    print('Processed {} pages: {}'.format(len(pages)-1, filepath))
+        insert_doc(uid, filename, page_contents[c],
+                   pages[c].metadata, str(embedding_vector))
+    print('Processed {} pages: {}'.format(len(page_contents)-1, filepath))
 
     return ('succeeded', 200)
 
