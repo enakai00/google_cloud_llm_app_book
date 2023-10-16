@@ -46,6 +46,7 @@ def delete_doc(uid, filename):
         parameters = {'uid': uid, 'filename': filename}
         db_conn.execute(delete_stmt, parameters=parameters)
         db_conn.commit()
+    return
 
 
 def insert_doc(uid, filename, content, metadata, embedding_vector):
