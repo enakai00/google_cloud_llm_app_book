@@ -3,8 +3,7 @@
 ```
 https://github.com/nodesource/distributions
 
-sudo apt-get install git jq -y
-
+sudo apt-get install git jq postgresql-client -y
 git config --global user.email "xxxx"
 git config --global user.name "xxxx"
 
@@ -121,6 +120,37 @@ gcloud eventarc triggers create trigger-$SERVICE_NAME \
   --service-account $SERVICE_ACCOUNT \
   --destination-run-path /api/post
 ```
+
+## Prepare Cloud SQL
+
+```
+gcloud sql instances create llm-app-db \
+  --database-version POSTGRES_15 \
+  --region asia-northeast1 --cpu 1 --memory 4GB \
+  --root-password=handson
+
+gcloud sql databases create documents \
+  --instance llm-app-db
+
+gcloud sql users create db-admin \
+  --instance llm-app-db \
+  --password handson
+
+gcloud sql connect  llm-app-db \
+  --user db-admin \
+  --database documents
+
+
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE TABLE docs_embeddings(
+  uid VARCHAR(128) NOT NULL,
+  filename VARCHAR(1024) NOT NULL,
+  content TEXT,
+  metadata TEXT,
+  embedding vector(768));
+exit;
+```
+
 
 ## Deploy main application
 
