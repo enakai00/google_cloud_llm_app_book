@@ -66,3 +66,14 @@ button:disabled {
 .textlink a:hover::after {
 	background-color: #ceb849;
 }
+
+.circle {
+  display: inline-block;
+  background: #0075c2;
+  border-radius: 50%;
+  width: 1.2rem;
+  height: 1.2rem;
+  color: #fff;
+  text-align: center;
+  line-height: 1.2rem;
+}
