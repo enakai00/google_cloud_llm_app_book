@@ -70,6 +70,11 @@ gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
   --member serviceAccount:$SERVICE_ACCOUNT \
   --role roles/storage.objectUser
 
+# To use CloudSQL
+gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
+  --member serviceAccount:$SERVICE_ACCOUNT \
+  --role roles/cloudsql.client
+
 # To receive events from eventarc
 gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
   --member serviceAccount:$SERVICE_ACCOUNT \
