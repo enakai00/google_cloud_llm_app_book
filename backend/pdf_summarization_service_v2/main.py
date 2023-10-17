@@ -11,19 +11,22 @@ from langchain.document_loaders import PyPDFLoader, GCSFileLoader
 from langchain.llms import VertexAI
 from langchain.chains import AnalyzeDocumentChain
 from langchain.chains.question_answering import load_qa_chain
+from langchain.embeddings import VertexAIEmbeddings
 
 
 app = Flask(__name__)
 
-# Prepare connection pool
-_, project_id = google.auth.default()
-region = 'asia-northeast1'
-instance_name = 'llm-app-db'
+# Get environment variables
+_, PROJECT_ID = google.auth.default()
+DB_REGION = os.environ.get('DB_REGION', 'asia-northeast1')
+DB_INSTANCE_NAME = os.environ.get('DB_INSTANCE_NAME', 'llm-app-db')
+DB_USER = os.environ.get('DB_USER', 'db-admin')
+DB_PASS = os.environ.get('DB_PASS', 'handson')
+DB_NAME = os.environ.get('DB_NAME', 'documents')
 
-INSTANCE_CONNECTION_NAME = f'{project_id}:{region}:{instance_name}'
-DB_USER = 'db-admin'
-DB_PASS = 'handson'
-DB_NAME = 'documents'
+# Prepare connection pool
+INSTANCE_CONNECTION_NAME = '{}:{}:{}'.format(
+        PROJECT_ID, DB_REGION, DB_INSTANCE_NAME)
 
 connector = Connector()
 
@@ -37,30 +40,30 @@ def getconn():
 pool = sqlalchemy.create_engine('postgresql+pg8000://', creator=getconn)
 
 
-def delete_doc(uid, filename):
+def delete_doc(source):
     with pool.connect() as db_conn:
         delete_stmt = sqlalchemy.text(
-            'DELETE FROM docs_embeddings \
-             WHERE uid=:uid AND filename=:filename;'
+            'DELETE FROM docs_embeddings WHERE source=:source;'
         )
-        parameters = {'uid': uid, 'filename': filename}
+        parameters = {'source': source}
         db_conn.execute(delete_stmt, parameters=parameters)
         db_conn.commit()
     return
 
 
-def insert_doc(uid, filename, content, metadata, embedding_vector):
+def insert_doc(source, uid, filename, page, content, embedding_vector):
     with pool.connect() as db_conn:
         insert_stmt = sqlalchemy.text(
             'INSERT INTO docs_embeddings \
-             (uid, filename, content, metadata, embedding) \
-             VALUES (:uid, :filename, :content, :metadata, :embedding)'
+             (source, uid, filename, page, content, embedding) \
+             VALUES (:source, :uid, :filename, :page, :content, :embedding);'
         )
         parameters = {
+            'source': source,
             'uid': uid,
             'filename': filename,
+            'page': page,
             'content': content,
-            'metadata': metadata,
             'embedding': embedding_vector
         }
         db_conn.execute(insert_stmt, parameters=parameters)
@@ -100,9 +103,9 @@ def process_event():
         return ('This is not a pdf file', 200)
 
     # Generate summary of pdf
-    _, project_id = google.auth.default()
+    _, PROJECT_ID = google.auth.default()
     document = GCSFileLoader(
-        project_name=project_id, bucket=bucket_name, blob=filepath,
+        project_name=PROJECT_ID, bucket=bucket_name, blob=filepath,
         loader_func=PyPDFLoader).load()
     pdf_content = document[0].page_content[:5000]
 
@@ -126,7 +129,7 @@ def process_event():
 
     # Store embedding vectores
     pages = GCSFileLoader(
-        project_name=project_id, bucket=bucket_name, blob=filepath,
+        project_name=PROJECT_ID, bucket=bucket_name, blob=filepath,
         loader_func=PyPDFLoader).load_and_split()
 
     page_contents = [
@@ -137,11 +140,15 @@ def process_event():
     embeddings = VertexAIEmbeddings(
         model_name='textembedding-gecko-multilingual@latest')
     embedding_vectors = embeddings.embed_documents(page_contents)
-    delete_doc(uid, filename)
+
+    source = pages[0].metadata['source']
+    delete_doc(source)
     for c, embedding_vector in enumerate(embedding_vectors):
-        insert_doc(uid, filename, page_contents[c],
-                   pages[c].metadata, str(embedding_vector))
-    print('Processed {} pages: {}'.format(len(page_contents)-1, filepath))
+        page = pages[c].metadata['page']
+        insert_doc(source, uid, filename, page,
+                   page_contents[c], str(embedding_vector))
+
+    print('Processed {} pages of {}'.format(len(pages)-1, filepath))
 
     return ('succeeded', 200)
 
