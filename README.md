@@ -24,9 +24,38 @@ gcloud artifacts repositories create llm-app-repo\
 REPO=asia-northeast1-docker.pkg.dev/$GOOGLE_CLOUD_PROJECT/llm-app-repo
 ```
 
+## Prepare Cloud SQL
+
+```
+gcloud sql instances create llm-app-db \
+  --database-version POSTGRES_15 \
+  --region asia-northeast1 --cpu 1 --memory 4GB \
+  --root-password=handson
+
+gcloud sql databases create documents \
+  --instance llm-app-db
+
+gcloud sql users create db-admin \
+  --instance llm-app-db \
+  --password handson
+
+gcloud sql connect  llm-app-db \
+  --user db-admin \
+  --database documents
+
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE TABLE docs_embeddings(
+  source VARCHAR(1024) NOT NULL,
+  uid VARCHAR(128) NOT NULL,
+  filename VARCHAR(256) NOT NULL,
+  page INTEGER NOT NULL,
+  content TEXT,
+  embedding vector(768));
+exit;
+```
+
 ## Deploy backend
 ### Create a service account
-
 ```
 gcloud iam service-accounts create llm-app-backend
 SERVICE_ACCOUNT=llm-app-backend@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com
@@ -71,7 +100,6 @@ curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
   -s ${SERVICE_URL}/api/post | jq .
 ```
 
-
 ### Fashion compliment
 ```
 SERVICE_NAME=fashion-compliment-service
@@ -97,13 +125,14 @@ curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
 ### PDF summarization
 ```
 SERVICE_NAME=pdf-summarization-service
-gcloud builds submit ./backend/pdf_summarization_service \
+gcloud builds submit ./backend/pdf_summarization_service_v2 \
   --tag $REPO/$SERVICE_NAME
 
 gcloud run deploy $SERVICE_NAME \
   --image $REPO/$SERVICE_NAME \
   --service-account $SERVICE_ACCOUNT \
-  --region asia-northeast1 --no-allow-unauthenticated
+  --region asia-northeast1 --no-allow-unauthenticated \
+  --set-env-vars "DB_REGION=asia-northeast1,DB_INSTANCE_NAME=llm-app-db"
 
 KMS_SERVICE_ACCOUNT=$(gsutil kms serviceaccount -p $GOOGLE_CLOUD_PROJECT)
 gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
@@ -121,35 +150,7 @@ gcloud eventarc triggers create trigger-$SERVICE_NAME \
   --destination-run-path /api/post
 ```
 
-## Prepare Cloud SQL
 
-```
-gcloud sql instances create llm-app-db \
-  --database-version POSTGRES_15 \
-  --region asia-northeast1 --cpu 1 --memory 4GB \
-  --root-password=handson
-
-gcloud sql databases create documents \
-  --instance llm-app-db
-
-gcloud sql users create db-admin \
-  --instance llm-app-db \
-  --password handson
-
-gcloud sql connect  llm-app-db \
-  --user db-admin \
-  --database documents
-
-
-CREATE EXTENSION IF NOT EXISTS vector;
-CREATE TABLE docs_embeddings(
-  uid VARCHAR(128) NOT NULL,
-  filename VARCHAR(1024) NOT NULL,
-  content TEXT,
-  metadata TEXT,
-  embedding vector(768));
-exit;
-```
 
 
 ## Deploy main application
