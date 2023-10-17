@@ -153,9 +153,12 @@ gcloud eventarc triggers create trigger-$SERVICE_NAME \
   --event-filters "bucket=$GOOGLE_CLOUD_PROJECT.appspot.com" \
   --service-account $SERVICE_ACCOUNT \
   --destination-run-path /api/post
+
+SUBSCRIPTION=$(gcloud pubsub subscriptions list --format json \
+  | jq -r '.[].name' | grep $SERVICE_NAME)
+gcloud pubsub subscriptions update \
+  $SUBSCRIPTION --ack-deadline=300
 ```
-
-
 
 
 ## Deploy main application
