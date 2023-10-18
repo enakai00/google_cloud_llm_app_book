@@ -28,7 +28,7 @@ export default function FilestorePage() {
   return (
     <>
       <Head>
-        <title>Inteligent Filestore</title>
+        <title>Intelligent Filestore</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <Filestore />
