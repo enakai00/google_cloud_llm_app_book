@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic'
 
 export default function FashionCompliment() {
 
-  // Auxiliary classes and functions
+  // Auxiliary classes and functions to handle image data
   class FileReaderEx extends FileReader {
     #readAs(blob, ctx) {
       return new Promise((resolve, reject) => {
