@@ -87,26 +87,36 @@ def upload_to_gcs(bucket_name, filepath, filename):
 @app.route('/api/post', methods=['POST'])
 def process_event():
     event = from_http(request.headers, request.data)
+    event_id = event['id']
     data = event.data
     bucket_name = data['bucket']
     filepath = data['name']
     uid = filepath.split('/')[0]
+    print('{} - Uploaded file: {}'.format(event_id, filepath))
+
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.get_blob(filepath)
+    if blob.content_type != 'application/pdf':
+        print('{} - {} is not a pdf file.'.format(event_id, filepath))
+        return ('This is not a pdf file.', 200)
 
     directory = os.path.dirname(filepath)
     filename = os.path.basename(filepath)
     filename_body, ext = os.path.splitext(filename)
     new_filepath = directory + '/summary/' + filename_body + '.txt'
 
-    print('Uploaded file: {}'.format(filepath))
-
-    if not ext.lower() == '.pdf':
-        return ('This is not a pdf file', 200)
-
     # Generate summary of pdf
     _, PROJECT_ID = google.auth.default()
-    document = GCSFileLoader(
-        project_name=PROJECT_ID, bucket=bucket_name, blob=filepath,
-        loader_func=PyPDFLoader).load()
+    try:
+        document = GCSFileLoader(
+            project_name=PROJECT_ID, bucket=bucket_name, blob=filepath,
+            loader_func=PyPDFLoader).load()
+    except:
+        print('{} - {} is not accessible. It may have been deleted.'.format(
+            event_id, filepath))
+        return ('File is not accessible.', 200)
+
     pdf_content = document[0].page_content[:5000]
 
     llm = VertexAI(
@@ -120,7 +130,7 @@ def process_event():
     description = qa_document_chain.run(
         input_document=pdf_content, question=prompt)
 
-    print('Description of {}: {}'.format(filename, description))
+    print('{} - Description of {}: {}'.format(event_id, filename, description))
     with tempfile.NamedTemporaryFile() as tmp_file:
         with open(tmp_file.name, 'w') as f:
             f.write(description)
@@ -128,9 +138,14 @@ def process_event():
 
 
     # Store embedding vectores
-    pages = GCSFileLoader(
-        project_name=PROJECT_ID, bucket=bucket_name, blob=filepath,
-        loader_func=PyPDFLoader).load_and_split()
+    try:
+        pages = GCSFileLoader(
+            project_name=PROJECT_ID, bucket=bucket_name, blob=filepath,
+            loader_func=PyPDFLoader).load_and_split()
+    except:
+        print('{} - {} is not accessible. It may have been deleted.'.format(
+            event_id, filepath))
+        return ('File is not accessible.', 200)
 
     page_contents = [
         page.page_content.encode('utf-8').replace(b'\x00', b'').decode('utf-8')
@@ -148,7 +163,8 @@ def process_event():
         insert_doc(source, uid, filename, page,
                    page_contents[c], str(embedding_vector))
 
-    print('Processed {} pages of {}'.format(len(pages)-1, filepath))
+    print('{} - Processed {} pages of {}'.format(
+        event_id, len(pages)-1, filepath))
 
     return ('succeeded', 200)
 

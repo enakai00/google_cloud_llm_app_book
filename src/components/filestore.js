@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { auth } from "lib/firebase";
-import { getStorage, getBlob, ref, listAll } from "firebase/storage";
+import { getStorage, getBlob, ref,
+	 uploadBytes, listAll,
+	 deleteObject } from "firebase/storage";
 
 
 export default function Filestore() {
@@ -9,9 +11,22 @@ export default function Filestore() {
   const [buttonDisabled, setButtonDisabled] = useState(false);
   const [popupText, setPopupText] = useState("");
   const [showPopup, setShowPopup] = useState(false);
+  const inputRef = useRef(null);
 
 
-  useEffect(() => { getFileList(); }, []);
+  useEffect(() => {
+    reloadFileList();
+    const interval = setInterval(() => {
+      getFileList();
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const reloadFileList = async () => {
+    setFileList([{filename: "Loading...", summary: false}]);
+    await getFileList();
+  };
 
   const getFileList = async () => {
     const storage = getStorage();
@@ -37,6 +52,29 @@ export default function Filestore() {
     setFileList(newFileList);
   };
 
+  const deleteFiles = async () => {
+    setButtonDisabled(true);
+    setFileList([{filename: "Removing...", summary: false}]);
+    const storage = getStorage();
+    const uid = auth.currentUser.uid;
+
+    const results = [];
+    let listRef = ref(storage, uid + "/summary");
+    let res = await listAll(listRef);
+    for (let item of res.items) {
+      results.push(deleteObject(item));
+    }
+    listRef = ref(storage, uid);
+    res = await listAll(listRef);
+    for (let item of res.items) {
+      results.push(deleteObject(item));
+    }
+    await Promise.all(results);	  
+    await getFileList();
+    setButtonDisabled(false);
+  }	  
+
+
   const showSummary = async (filename) => {
     setPopupText("Loading...");
     setShowPopup(true);
@@ -44,9 +82,23 @@ export default function Filestore() {
     const uid = auth.currentUser.uid;
     const filepath = uid + "/summary/" + filename.replace(/(.pdf$)/, ".txt");
     const summaryBlob = await getBlob(ref(storage, filepath));
-    const summaryText = await summaryBlob.text();
+    let summaryText = await summaryBlob.text();
+    if (summaryText.length > 650) {
+      summaryText = summaryText.substring(0, 650) + "..."
+    }
     setPopupText(summaryText);
   }
+
+  const onFileInputChange = async (evt) => {
+    setButtonDisabled(true);
+    const pdfBlob = evt.target.files[0];
+    const storage = getStorage();
+    const uid = auth.currentUser.uid
+    const storageRef = ref(storage, uid + "/" + pdfBlob.name);
+    await uploadBytes(storageRef, pdfBlob)
+    await getFileList();
+    setButtonDisabled(false);
+  };
 
   const infoButton = (item) => {
     var buttonElement;
@@ -87,6 +139,30 @@ export default function Filestore() {
     </div>
   );
 
+  var buttonElement;
+  if (buttonDisabled === false) {
+    buttonElement = (
+      <>
+        <button onClick={() => inputRef.current.click()}>
+          Upload PDF
+        </button>
+        <input ref={inputRef} hidden
+          type="file" accept="application/pdf" onChange={onFileInputChange} />
+        <button onClick={deleteFiles}>
+          Delete All
+        </button>
+        <button onClick={reloadFileList}>
+          Reload
+        </button>
+      </>            
+    );
+  } else {
+    buttonElement = (
+      <img src="/images/loading.gif" alt="loading"
+           style={{ width: "50px", marginLeft: "40px"}} />
+    )
+  }
+
   const element = (
     <>
       <div style={{
@@ -96,8 +172,7 @@ export default function Filestore() {
 	  {fileListElement}
 	  {showPopup && popupElement}
       </div>
-      <br/>
-      <button disabled={buttonDisabled}>Upload PDF</button>
+	  {buttonElement}
     </>
   );
 
