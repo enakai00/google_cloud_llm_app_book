@@ -137,6 +137,7 @@ gcloud run deploy $SERVICE_NAME \
   --image $REPO/$SERVICE_NAME \
   --service-account $SERVICE_ACCOUNT \
   --region asia-northeast1 --no-allow-unauthenticated \
+  --cpu 4 --memory 2Gi --concurrency 4 \
   --set-env-vars "DB_REGION=asia-northeast1,DB_INSTANCE_NAME=llm-app-db"
 
 KMS_SERVICE_ACCOUNT=$(gsutil kms serviceaccount -p $GOOGLE_CLOUD_PROJECT)
