@@ -130,15 +130,14 @@ curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
 ### PDF summarization
 ```
 SERVICE_NAME=pdf-summarization-service
-gcloud builds submit ./backend/pdf_summarization_service_v2 \
+gcloud builds submit ./backend/pdf_summarization_service \
   --tag $REPO/$SERVICE_NAME
 
 gcloud run deploy $SERVICE_NAME \
   --image $REPO/$SERVICE_NAME \
   --service-account $SERVICE_ACCOUNT \
   --region asia-northeast1 --no-allow-unauthenticated \
-  --cpu 4 --memory 2Gi --concurrency 4 \
-  --set-env-vars "DB_REGION=asia-northeast1,DB_INSTANCE_NAME=llm-app-db"
+  --cpu 4 --memory 2Gi --concurrency 4
 
 KMS_SERVICE_ACCOUNT=$(gsutil kms serviceaccount -p $GOOGLE_CLOUD_PROJECT)
 gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
@@ -161,6 +160,27 @@ gcloud pubsub subscriptions update \
   $SUBSCRIPTION --ack-deadline=300
 ```
 
+### PDF QA
+```
+SERVICE_NAME=pdf-qa-service
+gcloud builds submit ./backend/pdf_qa_service \
+  --tag $REPO/$SERVICE_NAME
+
+gcloud run deploy $SERVICE_NAME \
+  --image $REPO/$SERVICE_NAME \
+  --service-account $SERVICE_ACCOUNT \
+  --region asia-northeast1 --no-allow-unauthenticated \
+  --cpu 4 --memory 2Gi --concurrency 4 \
+  --set-env-vars "DB_REGION=asia-northeast1,DB_INSTANCE_NAME=llm-app-db"
+
+SERVICE_URL=$(gcloud run services list --platform managed \
+  --format="table[no-heading](URL)" --filter="metadata.name:${SERVICE_NAME}")
+USER_ID=$(gsutil ls gs://$GOOGLE_CLOUD_PROJECT.appspot.com | cut -d '/' -f 4 | head -1)
+curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
+  -H "Content-Type: application/json" \
+  -d '{"uid":"'$USER_ID'", "question":"今日の気分は？"}' \
+  -s ${SERVICE_URL}/api/question | jq .
+```
 
 ## Deploy main application
 
