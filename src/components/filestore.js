@@ -12,11 +12,13 @@ export default function Filestore() {
   const [showPopup, setShowPopup] = useState(false);
   const inputRef = useRef(null);
 
+  // Reload filelist to refrect the information button evary 1 minute.
   useEffect(() => {
     reloadFileList();
     const interval = setInterval(() => { getFileList(); }, 60000);
     return () => clearInterval(interval);
   }, []);
+
 
   const reloadFileList = async () => {
     setFileList([{filename: "Loading...", summary: false}]);
@@ -82,6 +84,7 @@ export default function Filestore() {
     setPopupText(summaryText);
   };
 
+  // Handling file upload
   const onFileInputChange = async (evt) => {
     setButtonDisabled(true);
     const pdfBlob = evt.target.files[0];
@@ -93,6 +96,7 @@ export default function Filestore() {
     setButtonDisabled(false);
   };
 
+  // Information button element to show the summary of PDF
   const infoButton = (item) => {
     var buttonElement;
     if (item.summary) {	  	
@@ -108,6 +112,7 @@ export default function Filestore() {
     return buttonElement;
   };
 
+  // Filelist element
   const fileListElement = [];
   for (let item of fileList) {
     const fileElement = (
@@ -119,6 +124,7 @@ export default function Filestore() {
     fileListElement.push(fileElement);
   }
 
+  // Popup element showing the summary of PDF
   const popupElement = (
     <div style={{ position: "absolute", left: "100px", top: "50px",
                   width: "400px", height: "300px",
@@ -132,6 +138,7 @@ export default function Filestore() {
     </div>
   );
 
+  // Button element for upload / delete / reload
   var buttonElement;
   if (buttonDisabled === false) {
     buttonElement = (
@@ -150,15 +157,16 @@ export default function Filestore() {
     );
   }
 
+
   const element = (
     <>
       <div style={{ width: "600px", height: "400px",
                     overflow: "scroll", overflowX: "hidden",
                     padding: "10px", border: "1px solid" }}>
-	  {fileListElement}
-	  {showPopup && popupElement}
+        {fileListElement}
+        {showPopup && popupElement}
       </div>
-	  {buttonElement}
+      {buttonElement}
     </>
   );
 
