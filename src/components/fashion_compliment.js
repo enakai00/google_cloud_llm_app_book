@@ -62,8 +62,8 @@ export default function FashionCompliment() {
   const [chatData, setChatData] = useState(chatDataInit);
   const [buttonDisabled, setButtonDisabled] = useState(false);
 
-  const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
+  // Automatically scrolling up to show the last message.
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   useEffect(() => {
     const scrollUp = async () => {
       messageEnd.current?.scrollIntoView();
@@ -129,16 +129,15 @@ export default function FashionCompliment() {
       if (item.text === "_typing_") {
         elem = (
           <div key={i} className="typing">
-            <img src="/images/loading.gif" alt="loading" style={{
-              width: "100px", marginLeft: "120px"}} />
+            <img src="/images/loading.gif" alt="loading"
+                 style={{ width: "100px", marginLeft: "120px" }} />
           </div>
-        );          
+        );
       } else {
         elem = (
-          <div key={i} className="bot" style={{
-            width: "300px", padding: "10px",
-            marginBottom: "20px", border: "1px solid #333333",
-            borderRadius: "10px"}}>
+          <div key={i} className="bot"
+               style={{ width: "300px", padding: "10px", marginBottom: "20px",
+                        border: "1px solid #333333", borderRadius: "10px" }}>
             {item.text}
           </div>
         );
