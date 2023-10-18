@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { auth } from "lib/firebase";
-import { getStorage, getBlob, ref,
-	 uploadBytes, listAll,
-	 deleteObject } from "firebase/storage";
+import { getStorage, ref, listAll, getBlob, 
+	 uploadBytes, deleteObject } from "firebase/storage";
 
 
 export default function Filestore() {
@@ -13,13 +12,9 @@ export default function Filestore() {
   const [showPopup, setShowPopup] = useState(false);
   const inputRef = useRef(null);
 
-
   useEffect(() => {
     reloadFileList();
-    const interval = setInterval(() => {
-      getFileList();
-    }, 60000);
-
+    const interval = setInterval(() => { getFileList(); }, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -48,7 +43,6 @@ export default function Filestore() {
       }
       newFileList.push({filename: item.name, summary: summary});
     }
-
     setFileList(newFileList);
   };
 
@@ -72,8 +66,7 @@ export default function Filestore() {
     await Promise.all(results);	  
     await getFileList();
     setButtonDisabled(false);
-  }	  
-
+  };
 
   const showSummary = async (filename) => {
     setPopupText("Loading...");
@@ -87,7 +80,7 @@ export default function Filestore() {
       summaryText = summaryText.substring(0, 650) + "..."
     }
     setPopupText(summaryText);
-  }
+  };
 
   const onFileInputChange = async (evt) => {
     setButtonDisabled(true);
@@ -119,7 +112,7 @@ export default function Filestore() {
   for (let item of fileList) {
     const fileElement = (
       <div key={item.filename}
-           style={{height: "1.8rem", lineHeight: "1.8rem"}}>
+           style={{ height: "1.8rem", lineHeight: "1.8rem" }}>
 	{infoButton(item)} {item.filename}
       </div>
     );
@@ -127,13 +120,13 @@ export default function Filestore() {
   }
 
   const popupElement = (
-    <div style={{position: "absolute", left: "100px", top: "50px",
-                 width: "400px", height: "300px",
-                 padding: "10px", margin: "10px",
-                 border: "1px solid", borderRadius: "10px",
-		 backgroundColor: "#f0f0f0"}}>
+    <div style={{ position: "absolute", left: "100px", top: "50px",
+                  width: "400px", height: "300px",
+                  padding: "10px", margin: "10px",
+                  border: "1px solid", borderRadius: "10px",
+		  backgroundColor: "#f0f0f0" }}>
       {popupText}
-      <div style={{position: "absolute", bottom: "10px", right: "10px"}}>
+      <div style={{ position: "absolute", bottom: "10px", right: "10px" }}>
         <button onClick={() => setShowPopup(false)}>Close</button>
       </div>
     </div>
@@ -143,32 +136,25 @@ export default function Filestore() {
   if (buttonDisabled === false) {
     buttonElement = (
       <>
-        <button onClick={() => inputRef.current.click()}>
-          Upload PDF
-        </button>
-        <input ref={inputRef} hidden
-          type="file" accept="application/pdf" onChange={onFileInputChange} />
-        <button onClick={deleteFiles}>
-          Delete All
-        </button>
-        <button onClick={reloadFileList}>
-          Reload
-        </button>
+        <button onClick={() => inputRef.current.click()}>Upload PDF</button>
+        <input ref={inputRef} hidden type="file" accept="application/pdf"
+	       onChange={onFileInputChange} />
+        <button onClick={deleteFiles}>Delete All</button>
+        <button onClick={reloadFileList}>Reload</button>
       </>            
     );
   } else {
     buttonElement = (
       <img src="/images/loading.gif" alt="loading"
-           style={{ width: "50px", marginLeft: "40px"}} />
-    )
+           style={{ width: "50px", marginLeft: "40px" }} />
+    );
   }
 
   const element = (
     <>
-      <div style={{
-	      width: "600px", height: "400px",
-              overflow: "scroll", overflowX: "hidden",
-              padding: "10px", border: "1px solid"}}>
+      <div style={{ width: "600px", height: "400px",
+                    overflow: "scroll", overflowX: "hidden",
+                    padding: "10px", border: "1px solid" }}>
 	  {fileListElement}
 	  {showPopup && popupElement}
       </div>
