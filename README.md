@@ -180,6 +180,29 @@ curl -X POST -H "Authorization: Bearer $(gcloud auth print-identity-token)" \
   -H "Content-Type: application/json" \
   -d '{"uid":"'$USER_ID'", "question":"今日の気分は？"}' \
   -s ${SERVICE_URL}/api/question | jq .
+
+gcloud eventarc triggers create trigger-finalized-$SERVICE_NAME \
+  --destination-run-service $SERVICE_NAME \
+  --destination-run-region asia-northeast1 \
+  --location asia-northeast1 \
+  --event-filters "type=google.cloud.storage.object.v1.finalized" \
+  --event-filters "bucket=$GOOGLE_CLOUD_PROJECT.appspot.com" \
+  --service-account $SERVICE_ACCOUNT \
+  --destination-run-path /api/post
+
+gcloud eventarc triggers create trigger-deleted-$SERVICE_NAME \
+  --destination-run-service $SERVICE_NAME \
+  --destination-run-region asia-northeast1 \
+  --location asia-northeast1 \
+  --event-filters "type=google.cloud.storage.object.v1.deleted" \
+  --event-filters "bucket=$GOOGLE_CLOUD_PROJECT.appspot.com" \
+  --service-account $SERVICE_ACCOUNT \
+  --destination-run-path /api/post
+
+SUBSCRIPTION=$(gcloud pubsub subscriptions list --format json \
+  | jq -r '.[].name' | grep $SERVICE_NAME)
+gcloud pubsub subscriptions update \
+  $SUBSCRIPTION --ack-deadline=300
 ```
 
 ## Deploy main application
