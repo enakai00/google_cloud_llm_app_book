@@ -5,7 +5,7 @@ import google.auth
 from cloudevents.http import from_http
 from flask import Flask, request
 from google.cloud import storage
-from langchain.document_loaders import PyPDFLoader, GCSFileLoader
+from langchain.document_loaders import PyPDFLoader
 from langchain.llms import VertexAI
 from langchain.chains import AnalyzeDocumentChain
 from langchain.chains.question_answering import load_qa_chain

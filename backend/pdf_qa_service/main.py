@@ -7,7 +7,7 @@ from cloudevents.http import from_http
 from flask import Flask, request
 from google.cloud import storage
 from google.cloud.sql.connector import Connector
-from langchain.document_loaders import PyPDFLoader, GCSFileLoader
+from langchain.document_loaders import PyPDFLoader
 from langchain.llms import VertexAI
 from langchain.chains import AnalyzeDocumentChain
 from langchain.chains.question_answering import load_qa_chain
@@ -15,6 +15,10 @@ from langchain.embeddings import VertexAIEmbeddings
 
 
 app = Flask(__name__)
+
+storage_client = storage.Client()
+embeddings = VertexAIEmbeddings(
+    model_name='textembedding-gecko-multilingual@latest')
 
 # Get environment variables
 _, PROJECT_ID = google.auth.default()
@@ -26,7 +30,7 @@ DB_NAME = os.environ.get('DB_NAME', 'documents')
 
 # Prepare connection pool
 INSTANCE_CONNECTION_NAME = '{}:{}:{}'.format(
-        PROJECT_ID, DB_REGION, DB_INSTANCE_NAME)
+    PROJECT_ID, DB_REGION, DB_INSTANCE_NAME)
 
 connector = Connector()
 
@@ -38,6 +42,11 @@ def getconn():
     return conn
 
 pool = sqlalchemy.create_engine('postgresql+pg8000://', creator=getconn)
+
+
+@app.route('/')
+def index():
+    return 'Google Cloud PDF summarization service.'
 
 
 def delete_doc(source):
@@ -71,77 +80,92 @@ def insert_doc(source, uid, filename, page, content, embedding_vector):
     return
 
 
-@app.route('/')
-def index():
-    return 'Google Cloud PDF summarization service.'
+def download_from_gcs(bucket_name, filepath, filename):
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(filepath)
+    blob.download_to_filename(filename)
 
 
 def upload_to_gcs(bucket_name, filepath, filename):
-    storage_client = storage.Client()
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(filepath)
     blob.upload_from_filename(filename)
+
+
+@app.route('/api/question', methods=['POST'])
+def answer_question():
+    json_data = request.get_json()
+    uid = json_data['uid']
+    question = json_data['question']
+    question_embedding = embeddings.embed_query(question)
+
+    with pool.connect() as db_conn:
+        search_stmt = sqlalchemy.text(
+            'SELECT filename, page, content, \
+             1 - (embedding <=> :question) AS similarity \
+             FROM docs_embeddings \
+             WHERE uid=:uid \
+             ORDER BY similarity DESC LIMIT 3;')
+        parameters = {'uid': uid, 'question': str(question_embedding)}
+        results = db_conn.execute(search_stmt, parameters=parameters)
+    text = ''
+    source = []
+    for filename, page, content, _ in results:
+        source.append({'filename': filename, 'page': page+1})
+        text += content + '\n'
+
+    llm = VertexAI(model_name='text-bison@001',
+        max_output_tokens=256, temperature=0.1, top_p=0.8, top_k=40)
+
+    qa_chain = load_qa_chain(llm, chain_type='map_reduce')
+    qa_document_chain = AnalyzeDocumentChain(combine_docs_chain=qa_chain)
+    prompt = "日本語で5文以内にまとめて答えてください：{}".format(question)
+    answer = qa_document_chain.run(
+        input_document=text, question=prompt)
+
+    resp = {
+        'answer': answer,
+        'source': source
+    }
+
+    return resp, 200
 
 
 # This handler is triggered by storage events
 @app.route('/api/post', methods=['POST'])
 def process_event():
     event = from_http(request.headers, request.data)
+    event_type = event['type']
+
     event_id = event['id']
     data = event.data
     bucket_name = data['bucket']
     filepath = data['name']
     uid = filepath.split('/')[0]
-    print('{} - Uploaded file: {}'.format(event_id, filepath))
+    source = '{}:{}/{}'.format(uid, bucket_name, filepath)
+    print('{} - Target file: {}'.format(event_id, filepath))
 
-    storage_client = storage.Client()
+    # Delete existing records
+    delete_doc(source)
+    if event_type.split('.')[-1] == 'deleted':
+        print('{} - Deleted DB records of {}.'.format(event_id, filepath))
+        return ('Succeeded.', 200)
+
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.get_blob(filepath)
-    if blob.content_type != 'application/pdf':
+    if blob is None or blob.content_type != 'application/pdf':
         print('{} - {} is not a pdf file.'.format(event_id, filepath))
         return ('This is not a pdf file.', 200)
 
     directory = os.path.dirname(filepath)
     filename = os.path.basename(filepath)
-    filename_body, ext = os.path.splitext(filename)
-    new_filepath = directory + '/summary/' + filename_body + '.txt'
-
-    # Generate summary of pdf
-    _, PROJECT_ID = google.auth.default()
-    try:
-        document = GCSFileLoader(
-            project_name=PROJECT_ID, bucket=bucket_name, blob=filepath,
-            loader_func=PyPDFLoader).load()
-    except:
-        print('{} - {} is not accessible. It may have been deleted.'.format(
-            event_id, filepath))
-        return ('File is not accessible.', 200)
-
-    pdf_content = document[0].page_content[:5000]
-
-    llm = VertexAI(
-        model_name='text-bison@001',
-        max_output_tokens=256, temperature=0.1, top_p=0.8, top_k=40
-    )
-
-    qa_chain = load_qa_chain(llm, chain_type='map_reduce')
-    qa_document_chain = AnalyzeDocumentChain(combine_docs_chain=qa_chain)
-    prompt = '何についての文書ですか？日本語で5文以内にまとめてください。'
-    description = qa_document_chain.run(
-        input_document=pdf_content, question=prompt)
-
-    print('{} - Description of {}: {}'.format(event_id, filename, description))
-    with tempfile.NamedTemporaryFile() as tmp_file:
-        with open(tmp_file.name, 'w') as f:
-            f.write(description)
-        upload_to_gcs(bucket_name, new_filepath, tmp_file.name)
-
 
     # Store embedding vectores
     try:
-        pages = GCSFileLoader(
-            project_name=PROJECT_ID, bucket=bucket_name, blob=filepath,
-            loader_func=PyPDFLoader).load_and_split()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            local_filepath = os.path.join(temp_dir, filename)
+            download_from_gcs(bucket_name, filepath, local_filepath)
+            pages = PyPDFLoader(local_filepath).load_and_split()
     except:
         print('{} - {} is not accessible. It may have been deleted.'.format(
             event_id, filepath))
@@ -152,12 +176,8 @@ def process_event():
         for page in pages[:100]
     ]
 
-    embeddings = VertexAIEmbeddings(
-        model_name='textembedding-gecko-multilingual@latest')
     embedding_vectors = embeddings.embed_documents(page_contents)
 
-    source = pages[0].metadata['source']
-    delete_doc(source)
     for c, embedding_vector in enumerate(embedding_vectors):
         page = pages[c].metadata['page']
         insert_doc(source, uid, filename, page,
@@ -166,7 +186,7 @@ def process_event():
     print('{} - Processed {} pages of {}'.format(
         event_id, len(pages)-1, filepath))
 
-    return ('succeeded', 200)
+    return ('Succeeded.', 200)
 
 
 if __name__ == '__main__':
