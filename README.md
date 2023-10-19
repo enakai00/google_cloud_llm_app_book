@@ -8,9 +8,9 @@ git config --global user.email "xxxx"
 git config --global user.name "xxxx"
 
 gcloud auth login
-gcloud config set project
+gcloud config set project [Project ID]
 
-GOOGLE_CLOUD_PROJECT=[Project ID]
+GOOGLE_CLOUD_PROJECT=$(gcloud config list --format="value(core.project)")
 ```
 
 ## Create artifact repo
