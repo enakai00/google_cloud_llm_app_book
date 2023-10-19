@@ -48,8 +48,7 @@ connector = Connector()
 def getconn():
     conn = connector.connect(
         INSTANCE_CONNECTION_NAME, 'pg8000',
-        user=DB_USER, password=DB_PASS, db=DB_NAME
-    )
+        user=DB_USER, password=DB_PASS, db=DB_NAME)
     return conn
 
 pool = sqlalchemy.create_engine('postgresql+pg8000://', creator=getconn)
@@ -116,7 +115,8 @@ def answer_question():
              1 - (embedding <=> :question) AS similarity \
              FROM docs_embeddings \
              WHERE uid=:uid \
-             ORDER BY similarity DESC LIMIT 3;')
+             ORDER BY similarity DESC LIMIT 3;'
+        )
         parameters = {'uid': uid, 'question': str(question_embedding)}
         results = db_conn.execute(search_stmt, parameters=parameters)
     text = ''
