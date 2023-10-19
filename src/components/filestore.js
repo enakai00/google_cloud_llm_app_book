@@ -127,7 +127,7 @@ export default function Filestore() {
   // Popup element showing the summary of PDF
   const popupElement = (
     <div style={{ position: "absolute", left: "100px", top: "50px",
-                  width: "400px", height: "300px",
+                  width: "400px", height: "320px",
                   padding: "10px", margin: "10px",
                   border: "1px solid", borderRadius: "10px",
 		  backgroundColor: "#f0f0f0" }}>

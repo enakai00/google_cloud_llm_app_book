@@ -15,7 +15,7 @@ export default function ApplicationMenu() {
           <li><Link href="./english_correction">English Correction AI Service</Link></li>
           <li><Link href="./fashion_compliment">Fashion Compliment AI Service</Link></li>
           <li><Link href="./filestore">Intelligent Filestore Service</Link></li>
-          <li><Link href="./knowledge_drive">Knowledge Drive Application</Link></li>
+          <li><Link href="./pdf_qa">QA Service</Link></li>
         </ul>
       </div>
     </div>

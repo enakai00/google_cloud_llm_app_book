@@ -66,7 +66,6 @@ export default function FashionCompliment() {
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   useEffect(() => {
     const scrollUp = async () => {
-      messageEnd.current?.scrollIntoView();
       await sleep(500);
       messageEnd.current?.scrollIntoView();
     };
