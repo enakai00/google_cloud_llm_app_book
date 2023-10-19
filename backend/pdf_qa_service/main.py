@@ -17,6 +17,17 @@ from langchain.embeddings import VertexAIEmbeddings
 app = Flask(__name__)
 
 storage_client = storage.Client()
+llm = VertexAI(
+    model_name='text-bison@001',
+    max_output_tokens=256,
+    temperature=0.1, top_p=0.8, top_k=40)
+
+# This is to preload the tokenizer module.
+qa_chain = load_qa_chain(llm, chain_type='map_reduce')
+qa_document_chain = AnalyzeDocumentChain(combine_docs_chain=qa_chain)
+_ = qa_document_chain.run(
+    input_document='I am feeling good.', question='How are you?')
+
 embeddings = VertexAIEmbeddings(
     model_name='textembedding-gecko-multilingual@latest')
 
@@ -113,9 +124,6 @@ def answer_question():
     for filename, page, content, _ in results:
         source.append({'filename': filename, 'page': page+1})
         text += content + '\n'
-
-    llm = VertexAI(model_name='text-bison@001',
-        max_output_tokens=256, temperature=0.1, top_p=0.8, top_k=40)
 
     qa_chain = load_qa_chain(llm, chain_type='map_reduce')
     qa_document_chain = AnalyzeDocumentChain(combine_docs_chain=qa_chain)
