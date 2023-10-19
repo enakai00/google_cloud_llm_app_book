@@ -72,9 +72,10 @@ def process_event():
             local_filepath = os.path.join(temp_dir, filename)
             download_from_gcs(bucket_name, filepath, local_filepath)
             document = PyPDFLoader(local_filepath).load()
-    except:
+    except Exception as e:
         print('{} - {} is not accessible. It may have been deleted.'.format(
             event_id, filepath))
+        print('Error message: {}'.format(e))
         return ('File is not accessible.', 200)
 
     pdf_content = document[0].page_content[:5000]
