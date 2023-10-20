@@ -212,11 +212,11 @@ gcloud iam service-accounts create llm-application
 SERVICE_ACCOUNT=llm-application@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com
 
 gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
-  --member serviceAccount:$SERVICE_ACCOUNt \
+  --member serviceAccount:$SERVICE_ACCOUNT \
   --role 'roles/firebase.sdkAdminServiceAgent'
 
 gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
-  --member serviceAccount:$SERVICE_ACCOUNt \
+  --member serviceAccount:$SERVICE_ACCOUNT \
   --role 'roles/run.invoker'
 
 #gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
